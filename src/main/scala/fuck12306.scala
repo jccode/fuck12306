@@ -12,8 +12,8 @@ import org.slf4j.LoggerFactory
 object Fuck12306 {
 
   val interval = 2 * 60 * 1000
-  val date = "2015-02-19"
-  val url = "https://kyfw.12306.cn/otn/lcxxcx/query?purpose_codes=ADULT&queryDate="+date+"&from_station=IOQ&to_station=CNQ"
+  // val date = "2015-02-17"
+  // val url = "https://kyfw.12306.cn/otn/lcxxcx/query?purpose_codes=ADULT&queryDate="+date+"&from_station=IOQ&to_station=CNQ"
   val logger = Logger(LoggerFactory.getLogger("Fuck12306"))
 
   def main(args:Array[String]) {
@@ -28,37 +28,56 @@ object Fuck12306 {
   }
 
   def runner(): Unit = {
+    checkTickets("2015-02-17", "IOQ", "CNQ", "492429624@qq.com") // shenzhen -> chaoyan
+
+    checkTickets("2015-02-15", "GZQ", "FAQ", "120687689@qq.com") // guangzhou -> shidong
+    checkTickets("2015-02-16", "GZQ", "FAQ", "120687689@qq.com")
+    checkTickets("2015-02-17", "GZQ", "FAQ", "120687689@qq.com")
+  }
+
+  def checkTickets(
+    date: String,
+    fromStation: String,
+    toStation: String,
+    email: String
+  ): Unit = {
     val now = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date())
-    logger.info(now + " check tickets. ")
+    logger.info(now + " check tickets for " + email + " at "+date+" from " + fromStation + " to " + toStation)
 
-    if(getDatas().values == None) return;
+    val jData = getDatas(date, fromStation, toStation).values
+    if(jData == None) return;
 
-    val datas = getDatas().values.asInstanceOf[List[Map[String, String]]]
+    val datas = jData.asInstanceOf[List[Map[String, String]]]
     val have_tickets = datas.exists(pTicketExist)
     if(!have_tickets) {
       logger.info("No tickets")
     } else {
       val tickets = datas.filter(pTicketExist).map(ticketInfo)
       val content = tickets.mkString("\n")
-      val header = "Tickets in " + date + "\n"
+      val header = "Tickets in " + date + " from " + fromStation + " to " + toStation + "\n"
       logger.info(header+content)
-      sendMail( header+content )
+      sendMail( email, header+content )
     }
   }
 
-  def getDatas(): JValue = {
-    val s = getJsonString()
+  def getDatas(date: String, fromStation: String, toStation: String): JValue = {
+    val url = "https://kyfw.12306.cn/otn/lcxxcx/query?purpose_codes=ADULT&queryDate="+date+"&from_station="+fromStation+"&to_station="+toStation
+    val s = getJsonString(url)
     val json = parse(s)
     json \ "data" \ "datas"
   }
 
-  def getJsonString(): String = {
+  def getJsonString(url :String): String = {
     SecurityBypasser.destroyAllSSLSecurityForTheEntireVMForever()
     fromInputStream(new URL(url).openStream()).getLines.mkString("\n")
   }
 
-  private def pTicketExist(el: Map[String, String]): Boolean =
-    el("wz_num") != "无" || el("zy_num") != "无" || el("ze_num") != "无"
+  private def pTicketExist(el: Map[String, String]): Boolean = {
+    val keys = List("wz_num", "zy_num", "ze_num")
+    val emptyValues = List("无", "*", "--")
+    val t = keys.map(k => emptyValues.map(v => el(k) == v).exists(_ == true))
+    t.exists(_ == false)
+  }
 
   private def ticketInfo(el: Map[String, String]): String =
     "[" + el("start_time") + " - " + el("arrive_time") + "]" +
@@ -72,14 +91,18 @@ object Fuck12306 {
     })
   }
 
-  def sendMail(content: String): Unit = {
+  def sendMail(email: String, content: String): Unit = {
     import mail._
 
-    send a new Mail (
-      from = "chen.junchang@163.com" -> "Junchang Chen",
-      to = "492429624@qq.com", // 492429624@qq.com chen.junchang@163.com
-      subject = "Tickes! Tickets!",
-      message = content
-    )
+    try {
+      send a new Mail (
+        from = "chen.junchang@163.com" -> "Junchang Chen",
+        to = email, // 492429624@qq.com chen.junchang@163.com
+        subject = "Tickes! Tickets!",
+        message = content
+      )
+    } catch {
+      case e: Exception => logger.error("send mail error. " + e)
+    }
   }
 }
