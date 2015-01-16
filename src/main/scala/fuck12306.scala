@@ -70,7 +70,8 @@ object Fuck12306 {
   }
 
   def getDatas(date: String, fromStation: String, toStation: String): JValue = {
-    val url = "https://kyfw.12306.cn/otn/lcxxcx/query?purpose_codes=ADULT&queryDate="+date+"&from_station="+fromStation+"&to_station="+toStation
+    // val url = "https://kyfw.12306.cn/otn/lcxxcx/query?purpose_codes=ADULT&queryDate="+date+"&from_station="+fromStation+"&to_station="+toStation
+    val url = "https://kyfw.12306.cn/otn/leftTicket/queryT?leftTicketDTO.train_date="+date+"&leftTicketDTO.from_station="+fromStation+"&leftTicketDTO.to_station="+toStation+"&purpose_codes=ADULT"
     val s = getJsonString(url)
     val json = parse(s)
     json \ "data" \ "datas"
@@ -121,12 +122,12 @@ object Fuck12306 {
   def isInValidTime(): Boolean = {
     val now = Calendar.getInstance()
     val am7 = now.clone().asInstanceOf[Calendar]
-    am7.set(Calendar.HOUR, 7)
+    am7.set(Calendar.HOUR_OF_DAY, 7)
     am7.set(Calendar.MINUTE, 0)
     am7.set(Calendar.SECOND, 0)
 
     val pm11 = now.clone().asInstanceOf[Calendar]
-    pm11.set(Calendar.HOUR, 23)
+    pm11.set(Calendar.HOUR_OF_DAY, 23)
     pm11.set(Calendar.MINUTE, 0)
     pm11.set(Calendar.SECOND, 0)
 
