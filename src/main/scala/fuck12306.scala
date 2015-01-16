@@ -1,6 +1,7 @@
 
 import scala.io.Source.{fromInputStream}
 import java.net._
+import java.util.Calendar
 
 import org.json4s._
 import org.json4s.native.JsonMethods._
@@ -22,7 +23,8 @@ object Fuck12306 {
 
   def loop(interval: Int, callback: () => Unit) = {
     while(true) {
-      callback()
+      if(isInValidTime()) 
+        callback()
       Thread sleep interval
     }
   }
@@ -43,21 +45,28 @@ object Fuck12306 {
   ): Unit = {
     val now = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date())
     logger.info(now + " check tickets for " + email + " at "+date+" from " + fromStation + " to " + toStation)
-
-    val jData = getDatas(date, fromStation, toStation).values
-    if(jData == None) return;
-
-    val datas = jData.asInstanceOf[List[Map[String, String]]]
-    val have_tickets = datas.exists(pTicketExist)
-    if(!have_tickets) {
-      logger.info("No tickets")
-    } else {
-      val tickets = datas.filter(pTicketExist).map(ticketInfo)
-      val content = tickets.mkString("\n")
-      val header = "Tickets in " + date + " from " + fromStation + " to " + toStation + "\n"
-      logger.info(header+content)
-      sendMail( email, header+content )
+    try {
+      val jData = getDatas(date, fromStation, toStation).values
+      if(jData == None) return;
+      val datas = jData.asInstanceOf[List[Map[String, String]]]
+      val have_tickets = datas.exists(pTicketExist)
+      if(!have_tickets) {
+        logger.info("No tickets")
+      } else {
+        val tickets = datas.filter(pTicketExist).map(ticketInfo)
+        val content = tickets.mkString("\n")
+        val header = "Tickets in " + date + " from " + fromStation + " to " + toStation + "\n"
+        logger.info(header+content)
+        sendMail( email, header+content )
+      }
+    } catch {
+      case e: Exception => {
+        logger.error("Some unexpected errors occured.", e);
+        return;
+      }
     }
+
+
   }
 
   def getDatas(date: String, fromStation: String, toStation: String): JValue = {
@@ -104,5 +113,23 @@ object Fuck12306 {
     } catch {
       case e: Exception => logger.error("send mail error. " + e)
     }
+  }
+
+  /**
+    * valid time is [7am, 11pm]
+    */
+  def isInValidTime(): Boolean = {
+    val now = Calendar.getInstance()
+    val am7 = now.clone().asInstanceOf[Calendar]
+    am7.set(Calendar.HOUR, 7)
+    am7.set(Calendar.MINUTE, 0)
+    am7.set(Calendar.SECOND, 0)
+
+    val pm11 = now.clone().asInstanceOf[Calendar]
+    pm11.set(Calendar.HOUR, 23)
+    pm11.set(Calendar.MINUTE, 0)
+    pm11.set(Calendar.SECOND, 0)
+
+    return now.after(am7) && now.before(pm11)
   }
 }
