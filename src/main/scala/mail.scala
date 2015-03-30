@@ -44,7 +44,7 @@ package object mail {
       // TODO Set authentication from your configuration, sys properties or w/e
       commonsMail.setHostName("smtp.163.com")
       commonsMail.setSmtpPort(25) // 465 or 25
-      commonsMail.setAuthentication("chen.junchang@163.com", "password")
+      commonsMail.setAuthentication("chen.junchang@163.com", "exd759805")
       commonsMail.setSSL(true)
 
       // commonsMail.setHostName("smtp.qq.com")

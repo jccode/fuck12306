@@ -37,11 +37,14 @@ object Fuck12306 {
     checkTickets("2015-02-17", "GZQ", "FAQ", "120687689@qq.com")
   }
 
+  def checkTickets(date: String, fromStation: String, toStation: String, email: String): Unit =
+    checkTickets(date, fromStation, toStation, List(email))  
+
   def checkTickets(
     date: String,
     fromStation: String,
     toStation: String,
-    email: String
+    email: Seq[String] = Seq.empty
   ): Unit = {
     val now = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date())
     logger.info(now + " check tickets for " + email + " at "+date+" from " + fromStation + " to " + toStation)
@@ -101,7 +104,7 @@ object Fuck12306 {
     })
   }
 
-  def sendMail(email: String, content: String): Unit = {
+  def sendMail(email: Seq[String], content: String): Unit = {
     import mail._
 
     try {
